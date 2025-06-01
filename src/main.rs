@@ -1,4 +1,4 @@
-use mem_sweep::{Work, can_process};
+use mem_sweep::{Job, can_process};
 use std::io::{BufRead, stdin};
 
 fn main() {
@@ -19,11 +19,11 @@ fn main() {
         .parse()
         .expect("Failed to parse memory_limit as i64");
 
-    let mut work = Vec::with_capacity(n);
+    let mut job = Vec::with_capacity(n);
     for _ in 0..n {
         let line = lines
             .next()
-            .unwrap_or_else(|| panic!("Expected {} lines of work data", n));
+            .unwrap_or_else(|| panic!("Expected {} lines of job data", n));
         let mut p = line.split_whitespace();
         let mem_usage: i64 = p
             .next()
@@ -41,14 +41,14 @@ fn main() {
             .parse()
             .expect("Failed to parse duration as u64");
 
-        work.push(Work {
+        job.push(Job {
             mem_usage,
             start,
             duration,
         });
     }
 
-    if can_process(memory_limit, work) {
+    if can_process(memory_limit, job) {
         println!("YES, can process");
     } else {
         println!("NO, can't process");

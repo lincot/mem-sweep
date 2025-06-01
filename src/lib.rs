@@ -1,7 +1,7 @@
 use vqsort_rs::Key64Value64;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Work {
+pub struct Job {
     pub mem_usage: i64,
     pub start: u64,
     pub duration: u64,
@@ -22,17 +22,17 @@ impl From<Key64Value64> for Event {
     }
 }
 
-pub fn can_process(memory_limit: u64, work: impl IntoIterator<Item = Work>) -> bool {
-    let work = work.into_iter();
-    let mut events = Vec::with_capacity(2 * work.size_hint().0);
-    for work in work {
+pub fn can_process(memory_limit: u64, jobs: impl IntoIterator<Item = Job>) -> bool {
+    let jobs = jobs.into_iter();
+    let mut events = Vec::with_capacity(2 * jobs.size_hint().0);
+    for job in jobs {
         events.push(Key64Value64 {
-            value: work.mem_usage as u64,
-            key: work.start,
+            value: job.mem_usage as u64,
+            key: job.start,
         });
         events.push(Key64Value64 {
-            value: (-work.mem_usage) as u64,
-            key: work.start + work.duration,
+            value: (-job.mem_usage) as u64,
+            key: job.start + job.duration,
         });
     }
 
@@ -69,8 +69,8 @@ pub fn can_process(memory_limit: u64, work: impl IntoIterator<Item = Work>) -> b
 mod tests {
     use super::*;
 
-    fn work(mem_usage: i64, start: u64, duration: u64) -> Work {
-        Work {
+    fn job(mem_usage: i64, start: u64, duration: u64) -> Job {
+        Job {
             mem_usage,
             start,
             duration,
@@ -78,60 +78,60 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_work_list() {
-        let tasks: Vec<Work> = vec![];
+    fn test_empty_job_list() {
+        let tasks: Vec<Job> = vec![];
         assert!(can_process(100, tasks));
     }
 
     #[test]
     fn test_single_task_within_limit() {
-        let tasks = vec![work(50, 10, 20)];
+        let tasks = vec![job(50, 10, 20)];
         assert!(can_process(100, tasks));
     }
 
     #[test]
     fn test_single_task_exceeds_limit() {
-        let tasks = vec![work(150, 0, 10)];
+        let tasks = vec![job(150, 0, 10)];
         assert!(!can_process(100, tasks));
     }
 
     #[test]
     fn test_non_overlapping_tasks() {
-        let tasks = vec![work(50, 0, 10), work(30, 20, 5)];
+        let tasks = vec![job(50, 0, 10), job(30, 20, 5)];
         assert!(can_process(60, tasks));
     }
 
     #[test]
     fn test_overlapping_within_limit() {
-        let tasks = vec![work(50, 0, 10), work(30, 5, 10)];
+        let tasks = vec![job(50, 0, 10), job(30, 5, 10)];
         assert!(can_process(80, tasks.iter().copied()));
         assert!(!can_process(79, tasks));
     }
 
     #[test]
     fn test_overlapping_exceeds_limit() {
-        let tasks = vec![work(40, 0, 20), work(50, 10, 10), work(30, 5, 10)];
+        let tasks = vec![job(40, 0, 20), job(50, 10, 10), job(30, 5, 10)];
         assert!(!can_process(100, tasks.iter().copied()));
         assert!(can_process(120, tasks));
     }
 
     #[test]
     fn test_deallocation_increases_memory() {
-        let tasks = vec![work(70, 0, 10), work(50, 10, 5)];
+        let tasks = vec![job(70, 0, 10), job(50, 10, 5)];
         assert!(can_process(70, tasks.iter().copied()));
         assert!(!can_process(69, tasks));
     }
 
     #[test]
     fn test_multiple_events_same_timestamp() {
-        let tasks = vec![work(10, 5, 5), work(20, 5, 5), work(30, 5, 10)];
+        let tasks = vec![job(10, 5, 5), job(20, 5, 5), job(30, 5, 10)];
         assert!(can_process(60, tasks.clone()));
         assert!(!can_process(59, tasks));
     }
 
     #[test]
     fn test_zero_duration_task() {
-        let tasks = vec![work(50, 100, 0)];
+        let tasks = vec![job(50, 100, 0)];
         assert!(can_process(0, tasks));
     }
 }
