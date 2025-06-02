@@ -42,13 +42,13 @@ pub fn can_process(memory_limit: u64, jobs: impl IntoIterator<Item = Job>) -> bo
     let mut remaining_mem = memory_limit as i64;
     for event in events {
         let event = Event::from(event);
-        if let Some(buffered_event) = merged_event.as_mut() {
-            if buffered_event.timestamp == event.timestamp {
-                buffered_event.mem_diff += event.mem_diff;
-            } else if buffered_event.mem_diff > remaining_mem {
+        if let Some(merged_event_) = merged_event.as_mut() {
+            if merged_event_.timestamp == event.timestamp {
+                merged_event_.mem_diff += event.mem_diff;
+            } else if merged_event_.mem_diff > remaining_mem {
                 return false;
             } else {
-                remaining_mem -= buffered_event.mem_diff;
+                remaining_mem -= merged_event_.mem_diff;
                 merged_event = Some(event);
             }
         } else {
