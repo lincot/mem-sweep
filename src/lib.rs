@@ -38,28 +38,25 @@ pub fn can_process(memory_limit: u64, jobs: impl IntoIterator<Item = Job>) -> bo
 
     vqsort_rs::sort(&mut events);
 
-    let mut merged_event: Option<Event> = None;
+    let mut merged_event = Event {
+        mem_diff: 0,
+        timestamp: 0,
+    };
     let mut remaining_mem = memory_limit as i64;
     for event in events {
         let event = Event::from(event);
-        if let Some(merged_event_) = merged_event.as_mut() {
-            if merged_event_.timestamp == event.timestamp {
-                merged_event_.mem_diff += event.mem_diff;
-            } else if merged_event_.mem_diff > remaining_mem {
-                return false;
-            } else {
-                remaining_mem -= merged_event_.mem_diff;
-                merged_event = Some(event);
-            }
+        if merged_event.timestamp == event.timestamp {
+            merged_event.mem_diff += event.mem_diff;
+        } else if merged_event.mem_diff > remaining_mem {
+            return false;
         } else {
-            merged_event = Some(event);
+            remaining_mem -= merged_event.mem_diff;
+            merged_event = event;
         }
     }
 
-    if let Some(buffered_event) = merged_event {
-        if buffered_event.mem_diff > remaining_mem {
-            return false;
-        }
+    if merged_event.mem_diff > remaining_mem {
+        return false;
     }
 
     true
